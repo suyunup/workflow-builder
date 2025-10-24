@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+/* React Flow 커스텀 스타일 */
+.react-flow {
+  background-color: #f9fafb;
+}
+
+.react-flow__node {
+  cursor: pointer;
+}
+
+.react-flow__edge-path {
+  stroke: #007aff;
+  stroke-width: 2px;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #0051d5;
+  filter: drop-shadow(0 0 4px #007aff);
+}
+
+.custom-edge-path {
+  stroke: #007aff;
+  fill: none;
+  stroke-linecap: round;
+  transition: all 0.3s ease-in-out;
+}
+
+.custom-edge-path:hover {
+  stroke: #0051d5;
+  filter: drop-shadow(0 0 6px #007aff);
+  stroke-width: 3px !important;
+}
+
+/* Task 노드 애니메이션 */
+.task-node {
+  transition: all 0.2s ease-in-out;
+  box-sizing: border-box;
+}
+.react-flow__handle {
+  pointer-events: none;
+}
+
+.task-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* React Flow Controls 스타일 */
+.react-flow__controls {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.react-flow__controls-button {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.react-flow__controls-button:hover {
+  background-color: #f3f4f6;
+}
+
+/* MiniMap 스타일 */
+.react-flow__minimap {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* 줄 제한 유틸리티 */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.task-node {
+  box-sizing: border-box;
+}
+.react-flow__handle {
+  position: absolute;
+}
