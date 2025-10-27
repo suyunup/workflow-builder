@@ -9,76 +9,33 @@ import {
 import { TaskData } from "../types";
 import { useFlowStore } from "../store";
 
-function ResizeIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      strokeWidth="2"
-      stroke="#686ad2"
-      fill="none"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ position: "absolute", right: 5, bottom: 5 }}
-    >
-      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-      <polyline points="16 20 20 20 20 16" />
-      <line x1="14" y1="14" x2="20" y2="20" />
-      <polyline points="8 4 4 4 4 8" />
-      <line x1="4" y1="4" x2="10" y2="10" />
-    </svg>
-  );
-}
-
-export const TaskNode = memo(({ id, data }: NodeProps<TaskData>) => {
+export const TaskNode = memo(({ id, data, selected }: NodeProps<TaskData>) => {
   const selectNode = useFlowStore((state) => state.selectNode);
 
   const [size, setSize] = useState({ width: 220, height: 140 });
+  const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(
+    null
+  );
 
-  const handleResize = (e: { dx: number; dy: number }) => {
-    setSize((prev) => ({
-      width: Math.max(180, prev.width + e.dx),
-      height: Math.max(100, prev.height + e.dy),
-    }));
+  const handleResizeStart = (e: any) => {
+    setStartPos({ x: e.dx, y: e.dy });
+    setSize(size);
   };
 
-  // // 리사이즈 상태 관리
-  // const resizingRef = useRef(false);
-  // const lastPosRef = useRef({ x: 0, y: 0 });
+  const handleResize = (e: any) => {
+    if (!startPos) return;
 
-  // // 리사이즈 핸들 이벤트
-  // const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-  //   console.log("Resize Mouse Down");
-  //   e.stopPropagation();
-  //   e.preventDefault();
-  //   if (
-  //     e.nativeEvent &&
-  //     typeof e.nativeEvent.stopImmediatePropagation === "function"
-  //   ) {
-  //     e.nativeEvent.stopImmediatePropagation();
-  //   }
-  //   resizingRef.current = true;
-  //   lastPosRef.current = { x: e.clientX, y: e.clientY };
-  //   window.addEventListener("mousemove", handleResizeMouseMove);
-  //   window.addEventListener("mouseup", handleResizeMouseUp);
-  // };
-  // window.isResizingNode = false; // Initialize the flag
+    const dx = e.dx - startPos.x;
+    const dy = e.dy - startPos.y;
 
-  // const handleResizeMouseMove = (e: MouseEvent) => {
-  //   if (!resizingRef.current) return;
-  //   const dx = e.clientX - lastPosRef.current.x;
-  //   const dy = e.clientY - lastPosRef.current.y;
-
-  //   lastPosRef.current = { x: e.clientX, y: e.clientY };
-  // };
-
-  // const handleResizeMouseUp = () => {
-  //   resizingRef.current = false;
-  //   window.removeEventListener("mousemove", handleResizeMouseMove);
-  //   window.removeEventListener("mouseup", handleResizeMouseUp);
-  // };
+    setSize({
+      width: Math.max(180, size.width + dx),
+      height: Math.max(100, size.height + dy),
+    });
+  };
+  const handleResizeEnd = () => {
+    setStartPos(null);
+  };
 
   const getStatusColor = () => {
     switch (data.status) {
@@ -180,17 +137,15 @@ export const TaskNode = memo(({ id, data }: NodeProps<TaskData>) => {
         style={{ right: -6 }}
       />
 
-      <NodeResizeControl
-        style={{
-          background: "transparent",
-          border: "none",
-        }}
+      <NodeResizer
+        color="#ff0071"
+        isVisible={selected}
+        onResizeStart={handleResizeStart}
         onResize={handleResize}
+        onResizeEnd={handleResizeEnd}
         minWidth={100}
-        minHeight={50}
-      >
-        <ResizeIcon />
-      </NodeResizeControl>
+        minHeight={30}
+      />
       {/* 헤더 */}
       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
         <h3 className="font-semibold text-gray-800 text-sm truncate flex-1">

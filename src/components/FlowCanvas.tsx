@@ -208,6 +208,7 @@ export function FlowCanvas() {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        onPaneClick={() => console.log("pane clicked")}
         fitView
         minZoom={0.5}
         maxZoom={2}

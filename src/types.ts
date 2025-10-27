@@ -6,6 +6,7 @@ export interface TaskData {
   prompt: string;
   result: string;
   status: "idle" | "running" | "success" | "error";
+  selected: boolean;
 }
 
 export type TaskNode = Node<TaskData>;

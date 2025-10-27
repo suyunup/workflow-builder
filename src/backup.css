@@ -48,11 +48,17 @@ body {
   stroke-width: 3px !important;
 }
 
+/* Task 노드 애니메이션 */
+.task-node {
+  transition: all 0.2s ease-in-out;
+  box-sizing: border-box;
+}
 .react-flow__handle {
   pointer-events: none;
 }
 
 .task-node:hover {
+  transform: translateY(-2px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
@@ -112,12 +118,4 @@ body {
 }
 .react-flow__handle {
   position: absolute;
-}
-
-.react-flow__resize-control.handle {
-  background-color: #ffffff;
-  border-color: #9e86ed;
-  border-radius: 0;
-  width: 5px;
-  height: 5px;
 }
