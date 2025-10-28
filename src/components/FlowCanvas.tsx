@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -6,15 +6,19 @@ import ReactFlow, {
   addEdge,
   Connection,
   Edge,
+  Node,
   NodeTypes,
   EdgeTypes,
   useReactFlow,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useFlowStore } from "../store";
 import { TaskNode } from "./TaskNode";
 import { CustomEdge } from "./CustomEdge";
 import { TaskPopup } from "./TaskPopup";
+import { NodeType } from "./types";
+import { EdgeTypeModal } from "./EdgeTypeModal";
 
 const nodeTypes: NodeTypes = {
   taskNode: TaskNode,
@@ -35,6 +39,9 @@ export function FlowCanvas() {
   const loadFlow = useFlowStore((state) => state.loadFlow);
   const clearFlow = useFlowStore((state) => state.clearFlow);
   const executeFlow = useFlowStore((state) => state.executeFlow);
+
+  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+  const [isModalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     loadFlow();
@@ -68,9 +75,10 @@ export function FlowCanvas() {
         addEdge(
           {
             ...params,
-            type: "custom",
+            type: "step",
             animated: false,
             style: { stroke: "#007AFF", strokeWidth: 2 },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#007aff" },
           },
           edges
         )
@@ -82,10 +90,6 @@ export function FlowCanvas() {
   const onNodesChange = useCallback(
     (changes: any) => {
       const updatedNodes = changes.reduce((acc: any[], change: any) => {
-        if (window.isResizingNode) {
-          // 리사이즈 중에는 노드 이동 무시
-          return acc;
-        }
         if (change.type === "position" && change.dragging) {
           return acc.map((node) =>
             node.id === change.id
@@ -122,11 +126,46 @@ export function FlowCanvas() {
       y: window.innerHeight / 2 - 100,
     };
     addNode(center);
-    setTimeout(() => fitView(), 100);
   };
 
   const handleExecute = async () => {
     await executeFlow();
+  };
+
+  const handleEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    setSelectedEdge(edge);
+    setModalOpen(true);
+  }, []);
+
+  const handleApply = (sourceType: NodeType, targetType: NodeType) => {
+    if (!selectedEdge) return;
+
+    let newSource = selectedEdge.source;
+    let newTarget = selectedEdge.target;
+
+    // input/output에 따라 방향 재설정
+    if (sourceType === "output" && targetType === "input") {
+      // 방향 뒤집기
+      newSource = selectedEdge.target;
+      newTarget = selectedEdge.source;
+    }
+    // input→output, output→input만 뒤집고, 나머지는 그대로
+
+    setEdges(
+      edges.map((e) =>
+        e.id === selectedEdge.id
+          ? {
+              ...e,
+              source: newSource,
+              target: newTarget,
+              markerEnd: { type: MarkerType.ArrowClosed, color: "#007aff" },
+            }
+          : e
+      )
+    );
+
+    setSelectedEdge(null);
+    setModalOpen(false);
   };
 
   return (
@@ -205,10 +244,10 @@ export function FlowCanvas() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onEdgeClick={handleEdgeClick}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onPaneClick={() => console.log("pane clicked")}
+        // edgeTypes={edgeTypes}
         fitView
         minZoom={0.5}
         maxZoom={2}
@@ -238,6 +277,19 @@ export function FlowCanvas() {
 
       {/* 팝업 */}
       <TaskPopup />
+      <EdgeTypeModal
+        open={isModalOpen}
+        edge={selectedEdge}
+        nodes={nodes}
+        onClose={() => setModalOpen(false)}
+        onApply={handleApply}
+        onDelete={() => {
+          if (!selectedEdge) return;
+          setEdges(edges.filter((e) => e.id !== selectedEdge.id));
+          setSelectedEdge(null);
+          setModalOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useFlowStore } from "../store";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function TaskPopup() {
   const selectedNode = useFlowStore((state) => state.selectedNode);
@@ -12,7 +12,7 @@ export function TaskPopup() {
   const node = nodes.find((n) => n.id === selectedNode);
 
   const [title, setTitle] = useState("");
-  const [prompt, setPrompt] = useState("");
+  const [prompts, setPrompts] = useState<string[]>([""]);
 
   // 드래그 관련 상태
   const [position, setPosition] = useState({
@@ -25,7 +25,7 @@ export function TaskPopup() {
   useEffect(() => {
     if (node) {
       setTitle(node.data.title);
-      setPrompt(node.data.prompt);
+      setPrompts(Array.isArray(node.data.prompts) ? node.data.prompts : [""]);
     }
   }, [node]);
 
@@ -65,7 +65,7 @@ export function TaskPopup() {
 
   const handleSave = () => {
     if (node) {
-      updateNode(node.id, { title, prompt });
+      updateNode(node.id, { title, prompts });
       selectNode(null);
     }
   };
@@ -77,7 +77,7 @@ export function TaskPopup() {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       updateNode(node.id, {
         status: "success",
-        result: `테스트 실행 완료!\n\n입력 프롬프트:\n${prompt}\n\n처리 결과:\n[AI가 생성한 결과 예시]`,
+        result: `테스트 실행 완료!\n\n입력 프롬프트:\n${(prompts || []).join("\n---\n")}\n\n처리 결과:\n[AI가 생성한 결과 예시]`,
       });
     }
   };
@@ -159,23 +159,38 @@ export function TaskPopup() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   placeholder="Task 이름을 입력하세요"
                 />
               </div>
 
-              {/* 프롬프트 입력 */}
+              {/* 프롬프트 입력 (다중) */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  프롬프트
+                  아이템
                 </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
-                  placeholder="AI에게 전달할 프롬프트를 입력하세요..."
-                />
+                <div className="flex flex-col gap-3">
+                  {prompts.map((value, idx) => (
+                    <AutoResizeTextarea
+                      key={idx}
+                      initialValue={value}
+                      onChange={(val) =>
+                        setPrompts((prev) => {
+                          const next = [...prev];
+                          next[idx] = val;
+                          return next;
+                        })
+                      }
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setPrompts((prev) => [...prev, ""])}
+                    className="self-start px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    생성
+                  </button>
+                </div>
               </div>
 
               {/* 결과 출력 */}
@@ -184,7 +199,7 @@ export function TaskPopup() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     실행 결과
                   </label>
-                  <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 whitespace-pre-wrap min-h-[100px]">
+                  <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 whitespace-pre-wrap min-h-[100px]">
                     {node.data.result}
                   </div>
                 </div>
@@ -195,7 +210,7 @@ export function TaskPopup() {
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors font-medium"
               >
                 삭제
               </button>
@@ -203,7 +218,7 @@ export function TaskPopup() {
                 <button
                   onClick={handleTest}
                   disabled={node.data.status === "running"}
-                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {node.data.status === "running"
                     ? "실행 중..."
@@ -211,7 +226,7 @@ export function TaskPopup() {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
                 >
                   저장
                 </button>
@@ -223,3 +238,66 @@ export function TaskPopup() {
     </AnimatePresence>
   );
 }
+
+const AutoResizeTextarea = ({
+  onChange,
+  initialValue = "",
+}: {
+  onChange: (value: string) => void;
+  initialValue?: string;
+}) => {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const handleInput = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+    const maxHeight = lineHeight * 10;
+    textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+  };
+
+  // 초기값 반영 및 높이 계산
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.value = initialValue ?? "";
+    textarea.style.height = "auto";
+    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight);
+    const maxHeight = lineHeight * 10;
+    textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + "px";
+  }, [initialValue]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      onInput={handleInput}
+      rows={4}
+      placeholder="내용을 입력해주세요"
+      onChange={(e) => onChange(e.target.value)}
+      className="
+        w-full
+        resize-none
+        overflow-y-auto
+        p-3
+        text-base
+        rounded-md
+        border
+        border-gray-300
+        focus:outline-none
+        focus:ring-2
+        focus:ring-blue-400
+        leading-relaxed
+        transition-all
+        duration-150
+        ease-in-out
+        placeholder:text-gray-400
+        scrollbar-thin
+        scrollbar-thumb-gray-300
+        scrollbar-track-transparent
+      "
+      value={initialValue}
+    />
+  );
+};

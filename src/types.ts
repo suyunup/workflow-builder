@@ -3,7 +3,7 @@ import { Node, Edge } from "reactflow";
 export interface TaskData {
   id: string;
   title: string;
-  prompt: string;
+  prompts: string[];
   result: string;
   status: "idle" | "running" | "success" | "error";
   selected: boolean;

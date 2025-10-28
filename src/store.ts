@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Edge } from 'reactflow';
+// import { Edge } from 'reactflow';
 import { FlowState, TaskNode, TaskData } from './types';
 
 export const useFlowStore = create<FlowState>((set, get) => ({
@@ -15,9 +15,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       data: {
         id: `task-${Date.now()}`,
         title: '새 Task',
-        prompt: '',
+        prompts: [''],
         result: '',
         status: 'idle',
+        selected: false,
       },
     };
     set((state) => ({ nodes: [...state.nodes, newNode] }));
@@ -99,7 +100,7 @@ async function executeNodeRecursively(
   // 성공 상태로 변경 및 결과 저장
   updateNode(nodeId, {
     status: 'success',
-    result: `${node.data.title} 실행 완료\n입력: ${node.data.prompt}\n출력: [처리된 결과]`,
+    result: `${node.data.title} 실행 완료\n입력: ${(node.data.prompts || []).join('\n---\n')}\n출력: [처리된 결과]`,
   });
 
   // 연결된 다음 노드 찾기
