@@ -9,10 +9,10 @@ export interface TaskData {
   selected: boolean;
 }
 
-export interface TaskEdge extends Edge {
+export type TaskEdge = Edge & {
   sourceHandle?: string;
   targetHandle?: string;
-}
+};
 
 export type TaskNode = Node<TaskData>;
 

@@ -47,7 +47,7 @@ export function FlowCanvas() {
   }, [nodes, edges, saveFlow]);
 
   const onConnect = useCallback(
-    (params: Connection | Edge) => {
+    (params: Connection) => {
       // 순환 연결 방지
       const sourceNode = nodes.find((n) => n.id === params.source);
       const targetNode = nodes.find((n) => n.id === params.target);
