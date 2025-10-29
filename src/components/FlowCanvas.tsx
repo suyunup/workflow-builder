@@ -6,26 +6,19 @@ import ReactFlow, {
   addEdge,
   Connection,
   Edge,
-  Node,
   NodeTypes,
-  EdgeTypes,
   useReactFlow,
   MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useFlowStore } from "../store";
 import { TaskNode } from "./TaskNode";
-import { CustomEdge } from "./CustomEdge";
 import { TaskPopup } from "./TaskPopup";
 import { NodeType } from "./types";
 import { EdgeTypeModal } from "./EdgeTypeModal";
 
 const nodeTypes: NodeTypes = {
   taskNode: TaskNode,
-};
-
-const edgeTypes: EdgeTypes = {
-  custom: CustomEdge,
 };
 
 export function FlowCanvas() {
@@ -64,9 +57,13 @@ export function FlowCanvas() {
       // 같은 노드끼리 연결 방지
       if (params.source === params.target) return;
 
-      // 이미 연결되어 있는지 확인
+      // 이미 연결되어 있는지 확인 (핸들 정보도 고려)
       const alreadyConnected = edges.some(
-        (edge) => edge.source === params.source && edge.target === params.target
+        (edge) =>
+          edge.source === params.source &&
+          edge.target === params.target &&
+          edge.sourceHandle === params.sourceHandle &&
+          edge.targetHandle === params.targetHandle
       );
 
       if (alreadyConnected) return;
@@ -79,6 +76,9 @@ export function FlowCanvas() {
             animated: false,
             style: { stroke: "#007AFF", strokeWidth: 2 },
             markerEnd: { type: MarkerType.ArrowClosed, color: "#007aff" },
+            // 핸들 정보 저장
+            sourceHandle: params.sourceHandle,
+            targetHandle: params.targetHandle,
           },
           edges
         )
@@ -143,13 +143,41 @@ export function FlowCanvas() {
     let newSource = selectedEdge.source;
     let newTarget = selectedEdge.target;
 
+    let newHandleSource = selectedEdge.sourceHandle;
+    let newHandleTarget = selectedEdge.targetHandle;
+
     // input/output에 따라 방향 재설정
     if (sourceType === "output" && targetType === "input") {
       // 방향 뒤집기
       newSource = selectedEdge.target;
       newTarget = selectedEdge.source;
+      newHandleSource = selectedEdge.targetHandle;
+      newHandleTarget = selectedEdge.sourceHandle;
     }
     // input→output, output→input만 뒤집고, 나머지는 그대로
+
+    // Handle ID 변환: in-0 ↔ out-0, in-1 ↔ out-1 등
+    const convertHandleId = (
+      handleId: string | null | undefined,
+      fromType: string,
+      toType: string
+    ) => {
+      if (!handleId) return handleId;
+
+      // in-0, out-1 등의 패턴 매칭
+      const match = handleId.match(/^(in|out)-(\d+)$/);
+      if (match) {
+        const [, currentType, index] = match;
+        if (currentType === fromType) {
+          return `${toType}-${index}`;
+        }
+      }
+      return handleId;
+    };
+
+    // Handle ID 변환 적용
+    newHandleSource = convertHandleId(newHandleSource, "in", "out");
+    newHandleTarget = convertHandleId(newHandleTarget, "out", "in");
 
     setEdges(
       edges.map((e) =>
@@ -158,6 +186,8 @@ export function FlowCanvas() {
               ...e,
               source: newSource,
               target: newTarget,
+              sourceHandle: newHandleSource,
+              targetHandle: newHandleTarget,
               markerEnd: { type: MarkerType.ArrowClosed, color: "#007aff" },
             }
           : e

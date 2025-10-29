@@ -9,6 +9,11 @@ export interface TaskData {
   selected: boolean;
 }
 
+export interface TaskEdge extends Edge {
+  sourceHandle?: string;
+  targetHandle?: string;
+}
+
 export type TaskNode = Node<TaskData>;
 
 export interface FlowState {

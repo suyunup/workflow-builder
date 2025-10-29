@@ -1,6 +1,6 @@
 import { Edge, Node } from "reactflow";
 
-export type NodeType = "input" | "default" | "output";
+export type NodeType = "input" | "output";
 
 export interface EdgeTypeModalProps {
   open: boolean;

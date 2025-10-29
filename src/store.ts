@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-// import { Edge } from 'reactflow';
+import { Edge } from 'reactflow';
 import { FlowState, TaskNode, TaskData } from './types';
 
 export const useFlowStore = create<FlowState>((set, get) => ({
@@ -84,7 +84,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 async function executeNodeRecursively(
   nodeId: string,
   get: () => FlowState,
-  set: (partial: Partial<FlowState>) => void
+  set: (partial: Partial<FlowState>) => void,
+  inputData?: { [handleId: string]: string }
 ) {
   const { nodes, edges, updateNode } = get();
   const node = nodes.find((n) => n.id === nodeId);
@@ -97,10 +98,27 @@ async function executeNodeRecursively(
   // 시뮬레이션: 2초 대기
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
+  // 입력 데이터 처리
+  let processedPrompts = [...(node.data.prompts || [])];
+  
+  if (inputData) {
+    // 각 아이템에 대해 입력 데이터 적용
+    Object.entries(inputData).forEach(([handleId, value]) => {
+      // handleId가 "in-{index}" 형태인 경우 해당 인덱스의 프롬프트 업데이트
+      const match = handleId.match(/^in-(\d+)$/);
+      if (match) {
+        const index = parseInt(match[1]);
+        if (index < processedPrompts.length) {
+          processedPrompts[index] = value;
+        }
+      }
+    });
+  }
+
   // 성공 상태로 변경 및 결과 저장
   updateNode(nodeId, {
     status: 'success',
-    result: `${node.data.title} 실행 완료\n입력: ${(node.data.prompts || []).join('\n---\n')}\n출력: [처리된 결과]`,
+    result: `${node.data.title} 실행 완료\n입력: ${processedPrompts.join('\n---\n')}\n출력: [처리된 결과]`,
   });
 
   // 연결된 다음 노드 찾기
@@ -108,6 +126,30 @@ async function executeNodeRecursively(
   
   // 다음 노드들을 순차적으로 실행
   for (const edge of nextEdges) {
-    await executeNodeRecursively(edge.target, get, set);
+    const targetNode = nodes.find((n) => n.id === edge.target);
+    if (!targetNode) continue;
+
+    // 출력 데이터 준비
+    const outputData: { [handleId: string]: string } = {};
+    const edgeWithHandles = edge as Edge & { sourceHandle?: string; targetHandle?: string };
+    
+    if (edgeWithHandles.sourceHandle) {
+      // sourceHandle이 "out-{index}" 형태인 경우 해당 아이템 값을 전달
+      const match = edgeWithHandles.sourceHandle.match(/^out-(\d+)$/);
+      if (match) {
+        const index = parseInt(match[1]);
+        if (index < processedPrompts.length) {
+          outputData[edgeWithHandles.targetHandle || 'default'] = processedPrompts[index];
+        }
+      } else {
+        // 고정 핸들인 경우 모든 아이템 내용 전달
+        outputData[edgeWithHandles.targetHandle || 'default'] = processedPrompts.join('\n---\n');
+      }
+    } else {
+      // 핸들 정보가 없는 경우 모든 아이템 내용 전달
+      outputData[edgeWithHandles.targetHandle || 'default'] = processedPrompts.join('\n---\n');
+    }
+
+    await executeNodeRecursively(edge.target, get, set, outputData);
   }
 }

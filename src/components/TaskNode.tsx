@@ -134,14 +134,11 @@ export const TaskNode = memo(({ id, data, selected }: NodeProps<TaskData>) => {
 
   // 각 아이템의 중앙 Y 좌표(노드 컨테이너 기준) 계산
   useLayoutEffect(() => {
-    const rootEl = rootRef.current;
-    if (!rootEl) return;
-    const rootRect = rootEl.getBoundingClientRect();
     const tops = (itemRefs.current || []).map((el) => {
       if (!el) return 0;
-      const itemRect = el.getBoundingClientRect();
-      const centerY = itemRect.top + itemRect.height / 2;
-      return centerY - rootRect.top; // 노드 루트 기준 Y
+      // root 내부 기준: 아이템의 상단 위치 + 높이의 절반
+      const centerY = el.offsetTop + el.offsetHeight / 2;
+      return centerY;
     });
     setItemHandleTops(tops);
   }, [data.prompts, size.height, size.width, availableLines]);
@@ -254,24 +251,27 @@ export const TaskNode = memo(({ id, data, selected }: NodeProps<TaskData>) => {
       />
 
       {/* 아이템별 핸들 (좌/우) */}
-      {itemHandleTops.map((top, idx) => (
-        <Fragment key={`frag-${idx}`}>
-          <Handle
-            id={`in-${idx}`}
-            type="target"
-            position={Position.Left}
-            className="w-3 h-3 bg-blue-500 border-2 border-white rounded-none"
-            style={{ top: top - 6, left: -6 }}
-          />
-          <Handle
-            id={`out-${idx}`}
-            type="source"
-            position={Position.Right}
-            className="w-3 h-3 bg-green-500 border-2 border-white rounded-none"
-            style={{ top: top - 6, right: -6 }}
-          />
-        </Fragment>
-      ))}
+      {(() => {
+        const validPrompts = (data.prompts || []).filter(p => p && p.trim().length > 0);
+        return itemHandleTops.slice(0, validPrompts.length).map((top, idx) => (
+          <Fragment key={`frag-${idx}`}>
+            <Handle
+              id={`in-${idx}`}
+              type="target"
+              position={Position.Left}
+              className="w-3 h-3 bg-blue-500 border-2 border-white rounded-none"
+              style={{ top: top + 3, left: -6 }}
+            />
+            <Handle
+              id={`out-${idx}`}
+              type="source"
+              position={Position.Right}
+              className="w-3 h-3 bg-green-500 border-2 border-white rounded-none"
+              style={{ top: top + 3, right: -6 }}
+            />
+          </Fragment>
+        ));
+      })()}
 
       {/* 헤더 */}
       <div
@@ -294,7 +294,7 @@ export const TaskNode = memo(({ id, data, selected }: NodeProps<TaskData>) => {
         {data.prompts && data.prompts.length > 0 ? (
           <div ref={listRef} className="flex flex-col gap-2">
             {(() => {
-              const prompts = data.prompts || [];
+              const prompts = (data.prompts || []).filter(p => p && p.trim().length > 0);
               const n = prompts.length;
               const minLines = n; // 아이템당 최소 1줄
               const extra = Math.max(0, availableLines - minLines);
